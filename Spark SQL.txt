@@ -1,0 +1,277 @@
+import os
+from pyspark.sql import SparkSession,SQLContext
+from pyspark import SparkContext,SparkConf
+from pyspark.sql.function import explode,countDistinct,avg,dayofmonth,dayofyear,year,month,hour,weekofyear,date_format
+from pyspark.sql.function import col as func_col
+
+
+cwd=os.getcwd()
+for part in cwd.split('/'):
+  if part.lower() startswith('edureka'):
+        user_id=part.title()
+print(user_id)
+
+app_name="{0}: Spark SQL".format(user_id)
+print(app_name)
+
+spark=SparkSession.builder.appName(app_name).getOrCreate()
+
+def get_hdfs_filepath(file_name):
+    my_hdfs="/user/{0}".format(user_id.lower())
+    return os.path.join(my_hdfs,file_name)
+
+
+APP=get_hdfs_filepath("emp.csv")
+emp_json_df=spark.read.json(APP)
+emp_json_df.show()
+emp_json_df.printSchema()
+emp_json_df.columns
+emp_json_df.describe()
+emp_json_df.desctibe().show()
+
+emp_json_df.select("salary").show()
+emp_json_df.head()
+emp_json_df.show(2,truncate=True)
+
+type(emp_json_df.head(2)[0])
+
+emp_json_df.select(['age','name']).show()
+emp_json_df.select(emp_json_df.age.alias('emp_age'),emp_json_df.name,(emp_json_df.salary*1.05).alias('rev_sal')).show()
+
+
+#Adding a new column:
+emp_json_df=emp_json_df.withColumn('newsal',emp_json_df['salary']*1.10).show()
+print(emp_json_df.columns)
+emp_json_df.withColumnRenamed('newsal','revised_sal').show()
+
+
+#Using SQL
+emp_json_df.createOrReplaceTempView('Emp')
+sql_df=spark.sql('Select * From Emp')
+sql_df.show()
+
+result=spark.sql("select salary ,salary*1.1  as rev_sal from emp where salary>=18000")
+result.show()
+
+#DataFrame Operations:
+goog_df=spark.read.csv(GOOG_CSV,inferSchema=True,header=True)
+goog_df.printSchema()
+goog_df.head(3)
+goog_df.filter("Close>200").show()
+goog_df.count()
+goog_df.filter("Close>200").select(['Open','Volume']).show()
+goog_df.filter(goog_df["Close"]<200 and goog_df["Open"]>200).show()
+goog_df.filter((goog_df["Close"]<200)&(goog_df["Open"]>200)).show()
+
+
+
+Conditional Operators:
+----------------------
+|->or
+&->and
+~->not
+
+goog_df.filter(goog_df["Low"]==197.16).show()
+result=goog_df.filter(goog_df["Low"]==197.16).collect()
+row=result[0]
+print(row.asDict())
+
+for item in row:
+   print(item)
+
+
+GroupBy Agg:
+------------
+
+comp_df=spark.read.csv(EMP_CSV,inferSchema=True,header=True)
+new_row=spark.createDataFrame([[8,'Larry',50,40000,'D3']],comp_df.columns)
+new_row.show()
+comp_df=comp_df.union(new_row)
+comp_df.show()
+comp_df.printSchema()
+comp_df.show()
+comp_df.groupBy('dept_id')
+comp_df.groupBy('dept_id').mean().show()
+comp_df.groupBy("dept_id").mean("salary").show()
+comp_df.groupBy("dept_id").sum("salary","age").show()
+
+
+#Alias name for aggregated measure columns:
+
+comp_df.groupBy("dept_id").mean("salary").alias("avg_sal").show()
+comp_df.groupBy("dept_id").mean("salary").select('dept_id',func_col("avg(salary)").alias("avsal")).show()
+comp_df.groupBy("dept_id").mean("salary").withColumnRenamed("avg(salary)",'avgSal').show()
+comp_df.groupBy("dept_id").count().show()
+comp_df.groupBy("dept_id").min().show()
+comp_df.groupBy("dept_id").sum().show()
+comp_df.groupBy("dept_id").max().show()
+
+
+#Aggregating without using groupBy:
+-----------------------------------
+comp_df.agg("salary":"max").show()
+grouped=comp_df.groupBy("dept_id").agg({"salary":"max"}).show()
+
+
+Group By Multiple Columns:
+--------------------------
+comp_df.groupBy("dept_id").sum("salary","age").mean("salary").show()
+
+
+#Spark SQL functions:
+---------------------
+goog_df.select(dayofmonth(goog_df['Date'])).show()
+goog_df.select(dayofyear(goog_df['Date'])).show()
+
+comp_df.select(countDistinct("salary")).show()
+comp_df.select(countDistinct("salary").alias("Distinct Salaries")).show()
+comp_df.select(avg("salary")).show()
+
+
+comp_df.select(avg("salary")).show()
+
+from pyspark.sql.functions import stddev
+comp_df.select(stddev("salary")).show()
+
+Order By:
+--------
+comp_df.orderBy("salary").show()
+comp_df.orderBy(comp_df["salary"].desc()).show()
+comp_df.orderBy(comp_df.salary.desc(),comp_df.name.asc()).show()
+
+
+#Parquet:
+--------
+Saving a dataframe to a different format.
+
+
+emp_json.write.mode('overwrite').parquet(get_hdfs_filepath('emp.parquet'))
+emp_json.show()
+pump_df=spark.read.parquet('emp.parquet')
+pump_df.head()
+
+
+from pyspark.sql import SQLContext
+sc=spark.sparkContext
+sql_ctx=SQLContext(sc)
+sql_ctx.registerFunction('ucase'lambda val:val.upper())
+spark.sql('Select * from emp where salary>=10000).show()
+spark.sql('Select ucase(name) uname,salary,age from emp where salary>=10000).show()
+spark.stop()
+
+Schema Management:
+RDD->DataFrame->RDD(interchangibly)
+
+
+lines=sparkContext.textFile(PEOPLE_TXT)
+parts=lines.map(lambda l: l.split(','))
+people=parts.map(lambda p:Row(name=p[0],age=int(p[1])))
+people.collect()
+schemapeople=spark.createDataFrame(people)
+schemapeople.createOrReplaceTempView("people")
+result=spark.sql("select name from people")
+results.show()
+peopleNames=results.add.map(lambda p:"Name "+p.name).collect()
+for name in peopleNames:
+   print(name)
+
+
+Programatically specifying the schema:
+--------------------------------------
+field types come from pyspark sql types.
+
+parts.collect()
+people=parts.map(lambda p:(p[0],p[1].strip()))
+people.collect()
+schemaString="name age"
+fields=[StructField(field_name,StringType(),True) for field_name in schemaString.split()]
+schema=StructType(fields)
+schemaPeople=sqlContext.createDataFrame(people,schema)
+schemaPeople.printSchema()
+schemaPeople.createOrReplaceTempView("people")
+results=spark.sql("Select name from people")
+peopleNames=results.rdd.map(lambda p:"Name :"+p.name).collect()
+for name in peopleNames:
+   print(name)
+
+1.Inferring schema
+2.Specifying schema
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
