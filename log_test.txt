@@ -1,0 +1,85 @@
+import csv
+
+
+def open_logfile(filename_log):
+   file=open(filename_log,'r')
+   for line in file:
+      yield line
+
+
+if __name__=="__main__":
+   csvfile=open("Report_log.csv",'w',newline='')
+   fieldname=['IP','TimeStamp','HTTP Verb','Response code','URL']
+   writer=csv.DictWriter(csvfile,fieldnames=fieldname)
+   writer.writeheader()
+   line=open_logfile("test.log")
+   while True:
+      str1=line.__next__()
+      print(str1)
+      try:
+         URL="http://"+str1.split('http://')[1].split(' ')[0]
+      except Exception as e:
+         URL="http://"+str1.split('- -')[0]
+      writer.writerow({'IP':str1.split('- -')[0],'TimeStamp':str1.split(']')[0].split('[')[1],'HTTP Verb':str1.split(']')[1].split('/')[0].strip(),'Response code':str1.split('HTTP/')[1].split(' ')[1],'URL':URL})
+   csvfile.close()
+   line.close()
+
+
+
+
+import os
+from pyspark.sql import SparkSession,SQLContext
+from pyspark import SparkContext,SparkConf
+from pyspark.sql.functions import explode,countDistinct,avg,dayofmonth,dayofyear,year,month,hour,weekofyear,date_format,isnan
+from pyspark.sql.functions import col as func_col
+
+cwd=os.getcwd()
+for part in cwd.split('/'):
+        if part.lower().startswith('edureka'):
+             user_id=part.title()
+print(user_id)
+
+app_name="{0}: Log Parse".format(user_id)
+print(app_name)
+
+spark=SparkSession.builder.appName(app_name).getOrCreate()
+
+def get_hdfs_filepath(file_name):
+    my_hdfs="/user/{0}".format(user_id.lower())
+    return os.path.join(my_hdfs,file_name)
+
+LOG_DF=get_hdfs_filepath('Report_log.csv.tmp')
+
+log_df=spark.read.csv(LOG_DF,inferSchema=True,header=True)
+log_df.show(2,truncate=True)
+log_df.columns
+log_df.createOrReplaceTempView('logdf')
+
+
+sql_df=spark.sql('select * from logdf')
+sql_df.show()
+
+log_df=log_df.withColumnRenamed("Response code", "Responsecode")
+log_df=log_df.withColumnRenamed("HTTP Verb", "HTTPVERB")
+log_df.createOrReplaceTempView('logdf')
+
+sql_df=spark.sql('select * from logdf')
+sql_df.show()
+
+#404 in access log
+sql_df=spark.sql('select Responsecode,count(URL) as failed_url from logdf group by Responsecode order by failed_url desc')
+sql_df.show()
+
+sql_df=spark.sql('select Responsecode,URL as failed_url from logdf where Responsecode==500')
+sql_df.show()
+
+log_df.select('URL').distinct().count()
+
+split_col = pyspark.sql.functions.split(log_df['TimeStamp'], ':')
+log_df = log_df.withColumn('DATE', split_col.getItem(0))
+log_df.createOrReplaceTempView('logdf')
+sql_df=spark.sql('select * from logdf')
+sql_df.show()
+
+
+
