@@ -1,0 +1,140 @@
+import sys
+import os
+import random
+from operator import add,mul
+from pyspark import SparkContext,SparkConf
+from pyspark import SparkFiles
+
+
+cwd=os.getcwd()
+for part in cwd.split('/'):
+    if part.lower().startswith('edureka'):
+       userid=part.title()
+print(userid)
+appname='{0} :RDD hands on".format(userid)
+
+#Spark Configuration.
+conf=SparkConf().setAppName(appname)
+sc=SparkContext(conf=conf)
+
+#use getorCreate when not sure if the spark is already running.
+sc=SparkContext.getOrCreate()
+sc.applicationId
+
+def get_hdfs_filepath(file_name):
+   my_hdfs='/user/{0}'.format(user_id.lower())
+   return os.path.join(my_hdfs,file_name)
+
+
+SAMPLE=get_hdfs_filepath("sample20181021.txt")
+AIRPORTS=get_hdfs_filepath("airports.csv")
+README=get_hdfs_filepath("README.md")
+DATA_STR="Python is one of the language supported by apache spark"
+
+#How to create RDD:
+#REsilient Distributed Dataset
+
+data=DATA_STR.split('')
+pcoll=sc.parallelize(data)
+pcoll.collect()
+
+#RDD from RDD
+
+rdd=pcoll.map(lambda word:word.upper())
+rdd.collect()
+
+text_file=sc.textFile(SAMPLE)
+text_file.map(lambda line:line.upper()).collect()
+
+RDD Transformations:
+--------------------
+New RDD from existing RDD is called Transformations:
+
+
+#RDD Transformations
+#map,filter,flatMap,distinct,sortBy,groupBy
+
+#AIRPORTS
+
+rdd=sc.textFile(AIRPORTS)
+lines=rdd.map(lambda line:line.split(','))
+lines.count()
+lines=lines.filter(lambda cols:cols[0]!='IATA')
+lines.count()
+codes=lines.map(lambda cols:cols[0])
+print(codes.count())
+print(codes.distinct.count())
+lines.sortBy(lambda line:line[1]).take(10)
+
+
+#flatmap cpllapses the internal list to create giant list.
+textfile=sc.textFile(README)
+words=textfile.flatMap(lambda line:line.split())
+words.take(50)
+grp=words.groupBy(lambda w:w[0])
+print([(k,len(list(v))) for k,v in gp.take(1)])
+print([(k,len(list(v))) for k,v in gp.take(10)])
+
+
+
+1.groupBy
+
+letter iterable
+
+2.keyBy
+
+letter word 
+
+3.reduceby
+
+
+Key Value Pair RDD:
+------------------
+keywords=words.keyBy(lambda word:word.lower()[0])
+keywords.take(10)
+rdd=sc.parellelize([('D1',30),('D2',45),('D1',40),('D2',40)])
+print(rdd.collect())
+sorted(rdd.foldByKey(1,mul).collect())
+
+
+rdd=sc.textFile(SAMPLE)
+wc=rdd.flatMap(lambda line:line.split(' ')).map(lambda w:(w,1))
+wc.reduceByKey(lambda a,b:a+b).take(10)
+
+
+
+------------------------------------------ASSIGNMENT--------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
