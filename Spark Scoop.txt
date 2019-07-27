@@ -1,0 +1,93 @@
+Sqoop
+-----
+Apache Sqoop
+
+What is apache sqoop?
+
+RDBMS to HDFS(Hadoop Distributed File System)
+
+Sqoop lets us transfer data from RDBMS to HDFS.
+and from HDFS to RDBMS.
+
+import->RDBMS to HDFS
+export->HDFS to RDBMS
+
+Sqoop->Maptask->HDFS/Hive/Hbase
+
+
+Sqoop import
+Gather Metadata
+Submit map only job
+
+1.Connected to Mysql
+
+Sqoop Commands:
+---------------
+Import Command in scoop to import data from Mysql to HDFS:
+
+sqoop import --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password=edureka --table employee -m 1 -target-dir '/user/edureka_121039/sq121039_employees_1'
+Source ,Destination and Mapper is there to import the data.
+
+Hue is the web interface for HDFS.
+
+The no of mappers used can be varied.
+
+
+Sqoop import command:
+--------------------
+sqoop import --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password=edureka --table employee -m 3 -target-dir '/user/edureka_121039/Bapann_employees_1' --split-by id
+
+Scoop Evaluate command to query database record by putting some limit:
+----------------------------------------------------------------------
+sqoop eval --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username labuser --password edureka --query 'Select * from employee limit 6'
+
+
+Where clause Scoop $CONDITION
+------------------------------
+sqoop import --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username labuser --password edureka --query 'Select * from employee where $CONDITIONS limit 6' -m 1 -target-dir '/user/edureka_672095/Bapan100_employees_only6'
+
+
+INCREMENTAL RECORD PULLING:
+---------------------------
+sqoop import --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password=edureka --table employee -target-dir '/user/edureka_672095/Bapan100_employees_only6' --incremental append --check-column id --last-value 6 -m 1
+
+
+LIST DATABASE:
+--------------
+sqoop list-databases --connect jdbc:mysql://mysqldb.edu.cloudlab.com/ --username=labuser --password=edureka
+sqoop list-databases --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password=edureka
+
+sqoop eval --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password edureka --query 'select table_schema, count(*) from information_schema.tables group by 1 having count(*) > 10 order by 2 desc'
+
+
+sqoop export --connect jdbc:mysql://mysqldb.edu.cloudlab.com/Bapan --username=labuser --password=edureka --table emp --export-dir /user/edureka_672095/Bapan_employees_1
+
+Resilient Distributed DataSets:(RDD)
+------------------------------------
+
+flatmap() converts internal lists into giant list.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
