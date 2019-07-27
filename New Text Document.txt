@@ -1,0 +1,14 @@
+import csv
+
+
+def open_logfile(filename_log):
+   file=open(filename_log,'r')
+   for line in file:
+      yield line
+
+
+if __name__=="__main__":
+   line=open_logfile("test.log")
+   print(line.__next__())
+
+  
